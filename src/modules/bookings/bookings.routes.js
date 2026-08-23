@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { BookingsController } from './bookings.controller.js';
+import { optionalAuthenticateToken } from '../auth/auth.middleware.js';
 
 const router = Router();
 
@@ -10,9 +11,9 @@ router.get('/trips/:tripId/seats', BookingsController.getTripSeatMap);
 router.post('/hold', BookingsController.holdSeats);
 
 // POST /api/v1/bookings/confirm - Confirm booking & generate QR ticket
-router.post('/confirm', BookingsController.confirmBooking);
+router.post('/confirm', optionalAuthenticateToken, BookingsController.confirmBooking);
 
 // GET /api/v1/bookings/my-trips - List passenger booked trips
-router.get('/my-trips', BookingsController.getMyTrips);
+router.get('/my-trips', optionalAuthenticateToken, BookingsController.getMyTrips);
 
 export default router;

@@ -43,8 +43,11 @@ export class BookingsController {
         return errorResponse(res, 'tripId and non-empty seatNumbers array are required', 400);
       }
 
+      const passengerId = req.body.passengerId || req.user?.passengerId;
+
       const booking = await BookingsService.confirmBooking({
         tripId,
+        passengerId,
         seatNumbers,
         passengerName,
         passengerPhone,
@@ -65,7 +68,8 @@ export class BookingsController {
   static async getMyTrips(req, res, next) {
     try {
       const { limit = 20 } = req.query;
-      const bookings = await BookingsService.getPassengerBookings(null, parseInt(limit, 10));
+      const passengerId = req.user?.passengerId || req.query.passengerId || req.query.passenger_id;
+      const bookings = await BookingsService.getPassengerBookings(passengerId, parseInt(limit, 10));
       return successResponse(res, bookings, 'My trips fetched successfully');
     } catch (error) {
       next(error);
