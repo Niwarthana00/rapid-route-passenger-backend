@@ -1,0 +1,224 @@
+{
+  "info": {
+    "_postman_id": "rapid-route-backend-api-v1",
+    "name": "Rapid Route API",
+    "description": "Rapid Route Passenger Backend Endpoints (Routes, Bookings, Tracking)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        {
+          "name": "Get All Routes (Limit 5)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/routes?limit=5&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "routes"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Routes by Name/City",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/routes?search=colombo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "routes"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "colombo"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Route by ID / Number",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/routes/001",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "routes", "001"]
+            }
+          }
+        },
+        {
+          "name": "Get Route Halts (Stops)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/routes/001/halts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "routes", "001", "halts"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Buses on Route",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/routes/001/buses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "routes", "001", "buses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Get Trip Seat Map",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/trips/78e92737-2520-4f61-b01d-2e7b1c612611/seats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "trips", "78e92737-2520-4f61-b01d-2e7b1c612611", "seats"]
+            }
+          }
+        },
+        {
+          "name": "Hold Seats (10 mins)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"78e92737-2520-4f61-b01d-2e7b1c612611\",\n  \"seatNumbers\": [11, 12]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/hold",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "hold"]
+            }
+          }
+        },
+        {
+          "name": "Confirm Booking & Generate QR Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"78e92737-2520-4f61-b01d-2e7b1c612611\",\n  \"seatNumbers\": [11],\n  \"passengerName\": \"John Doe\",\n  \"passengerPhone\": \"0771234567\",\n  \"paymentMethod\": \"CARD\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "My Trips (Booked Tickets)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bookings/my-trips",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "bookings", "my-trips"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Live Tracking",
+      "item": [
+        {
+          "name": "Get Live Bus GPS Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracking/trips/78e92737-2520-4f61-b01d-2e7b1c612611",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tracking", "trips", "78e92737-2520-4f61-b01d-2e7b1c612611"]
+            }
+          }
+        },
+        {
+          "name": "Driver GPS Update Push",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"78e92737-2520-4f61-b01d-2e7b1c612611\",\n  \"routeId\": \"001\",\n  \"latitude\": 6.9355,\n  \"longitude\": 79.8490,\n  \"speed\": 45.0,\n  \"heading\": 35.0,\n  \"currentStop\": \"Pettah\",\n  \"nextStop\": \"Peliyagoda\",\n  \"etaMins\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tracking/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tracking", "update"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}
