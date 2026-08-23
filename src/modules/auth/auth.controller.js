@@ -82,4 +82,31 @@ export class AuthController {
       next(err);
     }
   }
+
+  /**
+   * Update logged-in user profile
+   */
+  static async updateProfile(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const passengerId = req.user.passengerId;
+      const { fullName, phone, email, photoUrl } = req.body;
+
+      const data = await AuthService.updateProfile({
+        userId,
+        passengerId,
+        fullName,
+        phone,
+        email,
+        photoUrl,
+      });
+
+      return successResponse(res, data, 'Profile updated successfully.', 200);
+    } catch (err) {
+      if (err.message.includes('already exists')) {
+        return errorResponse(res, err.message, 400);
+      }
+      next(err);
+    }
+  }
 }

@@ -37,7 +37,7 @@ export class AuthService {
       const userSql = `
         INSERT INTO core.user_accounts (phone, email, password_hash, user_type, passenger_id)
         VALUES ($1, $2, $3, 'PASSENGER', $4)
-        RETURNING id, phone, email, user_type, passenger_id, created_at
+        RETURNING id, phone, email, photo_url AS "photoUrl", user_type, passenger_id, created_at
       `;
       const userRes = await client.query(userSql, [phone, email, hashedPassword, passengerProfile.id]);
       const userAccount = userRes.rows[0];
@@ -57,6 +57,7 @@ export class AuthService {
           id: userAccount.id,
           phone: userAccount.phone,
           email: userAccount.email,
+          photoUrl: userAccount.photoUrl || null,
           userType: 'PASSENGER',
         },
         profile: passengerProfile,
@@ -121,7 +122,7 @@ export class AuthService {
       const userSql = `
         INSERT INTO core.user_accounts (phone, email, password_hash, user_type, driver_id)
         VALUES ($1, $2, $3, 'DRIVER', $4)
-        RETURNING id, phone, email, user_type, driver_id, created_at
+        RETURNING id, phone, email, photo_url AS "photoUrl", user_type, driver_id, created_at
       `;
       const userRes = await client.query(userSql, [phone, email, hashedPassword, driverProfile.id]);
       const userAccount = userRes.rows[0];
@@ -141,6 +142,7 @@ export class AuthService {
           id: userAccount.id,
           phone: userAccount.phone,
           email: userAccount.email,
+          photoUrl: userAccount.photoUrl || null,
           userType: 'DRIVER',
         },
         profile: driverProfile,
@@ -166,7 +168,7 @@ export class AuthService {
 
     // 1. Find user account in core.user_accounts
     const userSql = `
-      SELECT id, phone, email, password_hash, user_type, passenger_id, driver_id, is_active
+      SELECT id, phone, email, photo_url AS "photoUrl", password_hash, user_type, passenger_id, driver_id, is_active
       FROM core.user_accounts
       WHERE LOWER(phone) = $1 OR LOWER(email) = $1
     `;
@@ -213,6 +215,7 @@ export class AuthService {
         id: user.id,
         phone: user.phone,
         email: user.email,
+        photoUrl: user.photoUrl || null,
         userType: user.user_type,
       },
       profile,
@@ -225,7 +228,7 @@ export class AuthService {
    */
   static async getProfile(userId) {
     const userRes = await query(
-      'SELECT id, phone, email, user_type, passenger_id, driver_id, is_active, created_at, last_login_at FROM core.user_accounts WHERE id = $1',
+      'SELECT id, phone, email, photo_url AS "photoUrl", user_type, passenger_id, driver_id, is_active, created_at, last_login_at FROM core.user_accounts WHERE id = $1',
       [userId]
     );
 
@@ -248,5 +251,96 @@ export class AuthService {
       user,
       profile,
     };
+  }
+
+  /**
+   * Update passenger profile details in core.passengers and core.user_accounts
+   */
+  static async updateProfile({ userId, passengerId, fullName, phone, email, photoUrl }) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Get current user_account
+      const userRes = await client.query(
+        'SELECT id, phone, email, photo_url, passenger_id FROM core.user_accounts WHERE id = $1',
+        [userId]
+      );
+      if (userRes.rows.length === 0) {
+        throw new Error('User account not found.');
+      }
+      const currentUser = userRes.rows[0];
+      const pId = passengerId || currentUser.passenger_id;
+
+      // 2. Check if phone or email is already taken by ANOTHER user_account
+      if (phone || email) {
+        const checkSql = `
+          SELECT id FROM core.user_accounts 
+          WHERE id <> $1 AND (
+            ($2::text IS NOT NULL AND phone = $2) OR 
+            ($3::text IS NOT NULL AND email IS NOT NULL AND email = $3)
+          )
+        `;
+        const checkRes = await client.query(checkSql, [userId, phone || null, email || null]);
+        if (checkRes.rows.length > 0) {
+          throw new Error('Another user account with this phone number or email already exists.');
+        }
+      }
+
+      // 3. Update core.passengers if passengerId exists
+      let updatedPassenger = null;
+      if (pId) {
+        const passUpdateSql = `
+          UPDATE core.passengers
+          SET 
+            full_name = COALESCE($1, full_name),
+            phone = COALESCE($2, phone),
+            email = COALESCE($3, email),
+            updated_at = NOW()
+          WHERE id = $4
+          RETURNING id, full_name AS "fullName", phone, email
+        `;
+        const passRes = await client.query(passUpdateSql, [fullName || null, phone || null, email || null, pId]);
+        if (passRes.rows.length > 0) {
+          updatedPassenger = passRes.rows[0];
+        }
+      }
+
+      // 4. Update core.user_accounts
+      const userUpdateSql = `
+        UPDATE core.user_accounts
+        SET 
+          phone = COALESCE($1, phone),
+          email = COALESCE($2, email),
+          photo_url = COALESCE($3, photo_url),
+          updated_at = NOW()
+        WHERE id = $4
+        RETURNING id, phone, email, photo_url AS "photoUrl"
+      `;
+      const updatedUserRes = await client.query(userUpdateSql, [phone || null, email || null, photoUrl !== undefined ? photoUrl : null, userId]);
+      const updatedUser = updatedUserRes.rows[0];
+
+      await client.query('COMMIT');
+
+      return {
+        user: {
+          id: updatedUser.id,
+          phone: updatedUser.phone,
+          email: updatedUser.email,
+          photoUrl: updatedUser.photoUrl,
+        },
+        profile: updatedPassenger ? {
+          id: updatedPassenger.id,
+          fullName: updatedPassenger.fullName,
+          phone: updatedPassenger.phone,
+          email: updatedPassenger.email,
+        } : null,
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }

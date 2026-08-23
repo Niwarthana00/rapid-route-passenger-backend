@@ -11,5 +11,6 @@ router.post('/login', AuthController.login);
 
 // Protected Authentication Endpoints
 router.get('/profile', authenticateToken, AuthController.getProfile);
+router.put('/profile', authenticateToken, AuthController.updateProfile);
 
 export default router;
