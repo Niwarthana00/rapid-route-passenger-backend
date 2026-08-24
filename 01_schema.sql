@@ -268,6 +268,26 @@ CREATE TABLE core.passengers (
 CREATE UNIQUE INDEX uq_passengers_phone_active ON core.passengers(phone) WHERE (deleted_at IS NULL);
 CREATE UNIQUE INDEX uq_passengers_email_active ON core.passengers(email) WHERE (deleted_at IS NULL AND email IS NOT NULL);
 
+-- =============================================================================
+-- CENTRAL AUTHENTICATION & USER ACCOUNTS
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS core.user_accounts (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email           VARCHAR(255),
+    phone           VARCHAR(20) NOT NULL,
+    password_hash   TEXT NOT NULL,
+    photo_url       TEXT,
+    user_type       VARCHAR(20) NOT NULL CHECK (user_type IN ('PASSENGER', 'DRIVER', 'ADMIN')),
+    passenger_id    UUID REFERENCES core.passengers(id) ON DELETE SET NULL,
+    driver_id       UUID REFERENCES core.drivers(id) ON DELETE SET NULL,
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    last_login_at   TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX uq_user_accounts_phone ON core.user_accounts(phone);
+CREATE UNIQUE INDEX uq_user_accounts_email ON core.user_accounts(email) WHERE (email IS NOT NULL);
+
 -- CHANGED (v4): passenger_id promoted to PRIMARY KEY, surrogate id column dropped.
 -- This is a genuine 1:1 relation (one loyalty row per passenger), so the previous
 -- id PK + passenger_id UNIQUE was two B-tree indexes maintaining the same fact.

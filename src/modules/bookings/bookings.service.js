@@ -290,7 +290,7 @@ export class BookingsService {
    */
   static async getPassengerBookings(passengerId = null, limit = 20) {
     try {
-      const sql = `
+      let sql = `
         SELECT 
           b.booking_ref AS "bookingId",
           b.booking_status AS "status",
@@ -302,7 +302,8 @@ export class BookingsService {
           h2.name AS "to",
           v.registration_number AS "busPlate",
           (v.model ILIKE '%AC%' OR v.make ILIKE '%Luxury%') AS "isAC",
-          t.trip_date AS "tripDate"
+          t.trip_date AS "tripDate",
+          b.trip_id AS "tripId"
         FROM biz.bookings b
         JOIN biz.trips t ON b.trip_id = t.id
         JOIN biz.schedules s ON t.schedule_id = s.id
@@ -310,11 +311,34 @@ export class BookingsService {
         JOIN core.halts h1 ON b.boarding_halt_id = h1.id
         JOIN core.halts h2 ON b.alighting_halt_id = h2.id
         JOIN core.vehicles v ON t.vehicle_id = v.id
-        ORDER BY b.booked_at DESC
-        LIMIT $1
       `;
-      const res = await query(sql, [limit]);
-      return res.rows;
+      const params = [];
+      if (passengerId) {
+        sql += ` WHERE b.passenger_id = $1`;
+        params.push(passengerId);
+      }
+      params.push(limit);
+      sql += ` ORDER BY b.booked_at DESC LIMIT $` + params.length;
+
+      const res = await query(sql, params);
+      return res.rows.map((row) => ({
+        id: row.bookingId,
+        bookingId: row.bookingId,
+        bookingRef: row.bookingId,
+        routeNumber: row.routeNumber,
+        from: row.from,
+        to: row.to,
+        busPlate: row.busPlate,
+        isAC: row.isAC,
+        seatNumber: row.seatNumber,
+        seatNumbers: [row.seatNumber],
+        fare: parseFloat(row.fare),
+        totalFare: parseFloat(row.fare),
+        date: row.bookedAt ? new Date(row.bookedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Today',
+        time: row.bookedAt ? new Date(row.bookedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '08:30 AM',
+        status: row.status || 'CONFIRMED',
+        tripId: row.tripId,
+      }));
     } catch (err) {
       console.warn('Passenger bookings query fallback:', err.message);
       return [];

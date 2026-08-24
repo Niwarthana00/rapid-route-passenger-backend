@@ -44,4 +44,5 @@ process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
 });
 
+// Rapid Route Server Entry Point - Updated 2026-08-22
 startServer();

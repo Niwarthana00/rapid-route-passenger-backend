@@ -2,6 +2,7 @@ import { Router } from 'express';
 import routesRouter from '../modules/routes/routes.routes.js';
 import bookingsRouter from '../modules/bookings/bookings.routes.js';
 import trackingRouter from '../modules/tracking/tracking.routes.js';
+import authRouter from '../modules/auth/auth.routes.js';
 
 const apiRouter = Router();
 
@@ -16,6 +17,7 @@ apiRouter.get('/health', (req, res) => {
 });
 
 // Feature Modules
+apiRouter.use('/auth', authRouter);
 apiRouter.use('/routes', routesRouter);
 apiRouter.use('/bookings', bookingsRouter);
 apiRouter.use('/tracking', trackingRouter);
