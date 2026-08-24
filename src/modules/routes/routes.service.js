@@ -271,9 +271,9 @@ export class RoutesService {
 
     // High quality dynamic fallback so no route ever shows empty
     return [
-      { id: 'b_live_1', plateNumber: 'ND-4521', eta: '4 mins', seatsLeft: 12, totalSeats: 45, isAC: true, fare: 500, currentStop: 'Main Terminal', markerTop: '35%', markerLeft: '50%', angle: 25 },
-      { id: 'b_live_2', plateNumber: 'NA-8812', eta: '14 mins', seatsLeft: 4, totalSeats: 45, isAC: false, fare: 320, currentStop: 'City Junction', markerTop: '55%', markerLeft: '45%', angle: 40 },
-      { id: 'b_live_3', plateNumber: 'WP-9920', eta: '28 mins', seatsLeft: 19, totalSeats: 45, isAC: true, fare: 500, currentStop: 'Outer Stand', markerTop: '70%', markerLeft: '38%', angle: 10 },
+      { id: '25b7613b-2c54-4512-ab3e-b487a6b728c4', plateNumber: 'ND-4521', eta: '4 mins', seatsLeft: 12, totalSeats: 45, isAC: true, fare: 500, currentStop: 'Main Terminal', markerTop: '35%', markerLeft: '50%', angle: 25 },
+      { id: '8cb5a920-ede8-4dd3-a055-87a6c9df3895', plateNumber: 'NA-8812', eta: '14 mins', seatsLeft: 4, totalSeats: 45, isAC: false, fare: 320, currentStop: 'City Junction', markerTop: '55%', markerLeft: '45%', angle: 40 },
+      { id: '2321231f-f9ca-4ce5-a15e-d3bfac89fedc', plateNumber: 'WP-9920', eta: '28 mins', seatsLeft: 19, totalSeats: 45, isAC: true, fare: 500, currentStop: 'Outer Stand', markerTop: '70%', markerLeft: '38%', angle: 10 },
     ];
   }
 }

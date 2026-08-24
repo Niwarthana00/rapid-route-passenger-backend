@@ -329,11 +329,11 @@ export class BookingsService {
         JOIN core.halts h2 ON b.alighting_halt_id = h2.id
         JOIN core.vehicles v ON t.vehicle_id = v.id
       `;
-      const params = [];
-      if (passengerId) {
-        sql += ` WHERE b.passenger_id = $1`;
-        params.push(passengerId);
+      if (!passengerId) {
+        return [];
       }
+      const params = [passengerId];
+      sql += ` WHERE b.passenger_id = $1`;
       params.push(limit);
       sql += ` ORDER BY b.booked_at DESC LIMIT $` + params.length;
 
