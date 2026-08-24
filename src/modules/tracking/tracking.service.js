@@ -97,6 +97,11 @@ export class TrackingService {
           longitude: parseFloat(h.longitude || 79.8428),
         }));
 
+        const polyline = haltsProgress.map((h) => ({
+          latitude: h.latitude,
+          longitude: h.longitude,
+        }));
+
         return {
           tripId,
           routeNumber: tripInfo.routeNumber,
@@ -116,6 +121,7 @@ export class TrackingService {
           latitude: memoryData ? memoryData.latitude : parseFloat(currentHalt.latitude || 6.9344),
           longitude: memoryData ? memoryData.longitude : parseFloat(currentHalt.longitude || 79.8428),
           halts: haltsProgress,
+          polyline: polyline,
           updatedAt: memoryData ? memoryData.updatedAt : new Date().toISOString(),
         };
       }
