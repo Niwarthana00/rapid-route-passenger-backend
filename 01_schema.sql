@@ -277,6 +277,7 @@ CREATE TABLE IF NOT EXISTS core.user_accounts (
     phone           VARCHAR(20) NOT NULL,
     password_hash   TEXT NOT NULL,
     photo_url       TEXT,
+    push_token      VARCHAR(255),
     user_type       VARCHAR(20) NOT NULL CHECK (user_type IN ('PASSENGER', 'DRIVER', 'ADMIN')),
     passenger_id    UUID REFERENCES core.passengers(id) ON DELETE SET NULL,
     driver_id       UUID REFERENCES core.drivers(id) ON DELETE SET NULL,

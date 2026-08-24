@@ -1,4 +1,5 @@
 import { pool, query } from '../../config/database.js';
+import { sendPushNotification } from '../../utils/pushNotification.js';
 
 // In-memory temporary seat hold store (10 minute TTL)
 const heldSeatsStore = new Map(); // key: `${tripId}_${seatNumber}`, value: { expiresAt, holdId }
@@ -251,6 +252,22 @@ export class BookingsService {
       }
 
       await client.query('COMMIT');
+
+      // Dispatch Push Notification to passenger if token exists
+      if (pId) {
+        query('SELECT push_token FROM core.user_accounts WHERE passenger_id = $1 AND push_token IS NOT NULL', [pId])
+          .then((pRes) => {
+            if (pRes.rows.length > 0 && pRes.rows[0].push_token) {
+              sendPushNotification({
+                to: pRes.rows[0].push_token,
+                title: 'Booking Confirmed! 🎟️',
+                body: `Your booking ${bookingRef} for seat(s) ${seatNumbers.join(', ')} is confirmed!`,
+                data: { bookingRef, tripId },
+              });
+            }
+          })
+          .catch((err) => console.warn('[PUSH NOTIFICATION TRIGGER WARN]:', err.message));
+      }
 
       // Format response exactly as React Native BookingConfirmedView expects
       const confirmedDetails = {

@@ -343,4 +343,25 @@ export class AuthService {
       client.release();
     }
   }
+
+  /**
+   * Save / Update push notification token for user account
+   */
+  static async savePushToken({ userId, pushToken }) {
+    if (!pushToken) {
+      throw new Error('Push token is required.');
+    }
+
+    const sql = `
+      UPDATE core.user_accounts
+      SET push_token = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, phone, email, push_token AS "pushToken"
+    `;
+    const res = await query(sql, [pushToken, userId]);
+    if (res.rows.length === 0) {
+      throw new Error('User account not found.');
+    }
+    return res.rows[0];
+  }
 }
