@@ -1,4 +1,5 @@
 import { pool, query } from '../../config/database.js';
+import { sendPushNotification } from '../../utils/pushNotification.js';
 
 // In-memory temporary seat hold store (10 minute TTL)
 const heldSeatsStore = new Map(); // key: `${tripId}_${seatNumber}`, value: { expiresAt, holdId }
@@ -252,6 +253,22 @@ export class BookingsService {
 
       await client.query('COMMIT');
 
+      // Dispatch Push Notification to passenger if token exists
+      if (pId) {
+        query('SELECT push_token FROM core.user_accounts WHERE passenger_id = $1 AND push_token IS NOT NULL', [pId])
+          .then((pRes) => {
+            if (pRes.rows.length > 0 && pRes.rows[0].push_token) {
+              sendPushNotification({
+                to: pRes.rows[0].push_token,
+                title: 'Booking Confirmed! 🎟️',
+                body: `Your booking ${bookingRef} for seat(s) ${seatNumbers.join(', ')} is confirmed!`,
+                data: { bookingRef, tripId },
+              });
+            }
+          })
+          .catch((err) => console.warn('[PUSH NOTIFICATION TRIGGER WARN]:', err.message));
+      }
+
       // Format response exactly as React Native BookingConfirmedView expects
       const confirmedDetails = {
         bookingId: bookingRef,
@@ -312,11 +329,11 @@ export class BookingsService {
         JOIN core.halts h2 ON b.alighting_halt_id = h2.id
         JOIN core.vehicles v ON t.vehicle_id = v.id
       `;
-      const params = [];
-      if (passengerId) {
-        sql += ` WHERE b.passenger_id = $1`;
-        params.push(passengerId);
+      if (!passengerId) {
+        return [];
       }
+      const params = [passengerId];
+      sql += ` WHERE b.passenger_id = $1`;
       params.push(limit);
       sql += ` ORDER BY b.booked_at DESC LIMIT $` + params.length;
 
@@ -342,6 +359,53 @@ export class BookingsService {
     } catch (err) {
       console.warn('Passenger bookings query fallback:', err.message);
       return [];
+    }
+  }
+
+  /**
+   * Cancel booking and release seats
+   */
+  static async cancelBooking({ bookingId, passengerId }) {
+    if (!bookingId) {
+      throw new Error('Booking ID is required.');
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Check if matching booking exists
+      const checkSql = `
+        SELECT id, booking_ref, seat_number, trip_id, booking_status
+        FROM biz.bookings
+        WHERE (id::text = $1 OR booking_ref = $1 OR booking_ref LIKE $2)
+      `;
+      const checkRes = await client.query(checkSql, [bookingId, `${bookingId}-%`]);
+
+      if (checkRes.rows.length === 0) {
+        throw new Error('Booking not found.');
+      }
+
+      // 2. Update status to CANCELLED in biz.bookings
+      const updateSql = `
+        UPDATE biz.bookings
+        SET booking_status = 'CANCELLED'
+        WHERE id::text = $1 OR booking_ref = $1 OR booking_ref LIKE $2
+        RETURNING id, booking_ref, seat_number, trip_id
+      `;
+      const updateRes = await client.query(updateSql, [bookingId, `${bookingId}-%`]);
+
+      await client.query('COMMIT');
+
+      return {
+        cancelledCount: updateRes.rows.length,
+        releasedSeats: updateRes.rows.map((r) => r.seat_number),
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
   }
 }

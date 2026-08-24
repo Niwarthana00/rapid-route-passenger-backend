@@ -109,4 +109,27 @@ export class AuthController {
       next(err);
     }
   }
+
+  /**
+   * Save push notification token
+   */
+  static async savePushToken(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { pushToken, token } = req.body;
+      const targetPushToken = pushToken || token;
+
+      const data = await AuthService.savePushToken({
+        userId,
+        pushToken: targetPushToken,
+      });
+
+      return successResponse(res, data, 'Push token registered successfully.', 200);
+    } catch (err) {
+      if (err.message.includes('required')) {
+        return errorResponse(res, err.message, 400);
+      }
+      next(err);
+    }
+  }
 }
