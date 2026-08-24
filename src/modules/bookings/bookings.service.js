@@ -361,4 +361,51 @@ export class BookingsService {
       return [];
     }
   }
+
+  /**
+   * Cancel booking and release seats
+   */
+  static async cancelBooking({ bookingId, passengerId }) {
+    if (!bookingId) {
+      throw new Error('Booking ID is required.');
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Check if matching booking exists
+      const checkSql = `
+        SELECT id, booking_ref, seat_number, trip_id, booking_status
+        FROM biz.bookings
+        WHERE (id::text = $1 OR booking_ref = $1 OR booking_ref LIKE $2)
+      `;
+      const checkRes = await client.query(checkSql, [bookingId, `${bookingId}-%`]);
+
+      if (checkRes.rows.length === 0) {
+        throw new Error('Booking not found.');
+      }
+
+      // 2. Update status to CANCELLED in biz.bookings
+      const updateSql = `
+        UPDATE biz.bookings
+        SET booking_status = 'CANCELLED'
+        WHERE id::text = $1 OR booking_ref = $1 OR booking_ref LIKE $2
+        RETURNING id, booking_ref, seat_number, trip_id
+      `;
+      const updateRes = await client.query(updateSql, [bookingId, `${bookingId}-%`]);
+
+      await client.query('COMMIT');
+
+      return {
+        cancelledCount: updateRes.rows.length,
+        releasedSeats: updateRes.rows.map((r) => r.seat_number),
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 }

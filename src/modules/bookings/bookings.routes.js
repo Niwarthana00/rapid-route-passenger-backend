@@ -16,4 +16,9 @@ router.post('/confirm', optionalAuthenticateToken, BookingsController.confirmBoo
 // GET /api/v1/bookings/my-trips - List passenger booked trips
 router.get('/my-trips', optionalAuthenticateToken, BookingsController.getMyTrips);
 
+// POST & PUT /api/v1/bookings/:bookingId/cancel - Cancel booking & release seats
+router.post('/:bookingId/cancel', optionalAuthenticateToken, BookingsController.cancelBooking);
+router.post('/cancel', optionalAuthenticateToken, BookingsController.cancelBooking);
+router.put('/:bookingId/cancel', optionalAuthenticateToken, BookingsController.cancelBooking);
+
 export default router;

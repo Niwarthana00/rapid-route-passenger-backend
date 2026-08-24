@@ -75,4 +75,24 @@ export class BookingsController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/v1/bookings/:bookingId/cancel
+   * Cancel booking and release seats
+   */
+  static async cancelBooking(req, res, next) {
+    try {
+      const bookingId = req.params.bookingId || req.body.bookingId;
+      const passengerId = req.user?.passengerId;
+
+      await BookingsService.cancelBooking({ bookingId, passengerId });
+
+      return successResponse(res, null, 'Booking cancelled and seats released successfully.', 200);
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        return errorResponse(res, error.message, 404);
+      }
+      return errorResponse(res, error.message, 400);
+    }
+  }
 }
